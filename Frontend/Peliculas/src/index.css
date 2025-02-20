@@ -1,0 +1,21 @@
+/* index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Aplicar la fuente globalmente */
+body {
+  @apply font-sans;
+  @apply bg-zinc-900;
+}
+/* src/index.css */
+
+/* Añade esta clase para ocultar el scrollbar del sidebar si es necesario */
+.sidebar {
+  scrollbar-width: none; /* Firefox */
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
