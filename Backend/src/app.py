@@ -15,9 +15,8 @@ app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:200804@localhost:3306/peliculas'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'tu_secreta_clave'
+app.config['SECRET_KEY'] = 'key secret'
 
-# CONFIGURACIÓN PARA SUBIDA DE ARCHIVOS
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -25,7 +24,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# PARA FLASK CORS
+
 CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}})
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -79,7 +78,7 @@ class Usuario(db.Model):
         self.password = password
         self.rol = rol
 
-# ESQUEMAS DE MARSHMALLOW
+# ESQUEMAS
 class CategoriaSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Categoria
@@ -94,7 +93,7 @@ class UsuarioSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Usuario
         load_instance = True
-        exclude = ('password',)  # No incluir la contraseña en la respuesta
+        exclude = ('password',)  
 
 # DECORADORES PARA VERIFICAR EL TOKEN Y EL ROL DEL USUARIO
 def token_required(f):
@@ -125,7 +124,6 @@ def admin_required(f):
         return f(current_user, *args, **kwargs)
     return decorated
 
-# FUNCIONES AUXILIARES
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -224,7 +222,6 @@ def actualizar_usuario(current_user, id):
     password = data.get('password')
     rol = data.get('rol', usuario.rol).strip().lower()
 
-    # VERIFICAR SI EL NOMBRE DE USUARIO YA ESTÁ EN USO
     if Usuario.query.filter(
         Usuario.nombreUsuario == nombreUsuario,
         Usuario.id != id
@@ -256,7 +253,6 @@ def eliminar_usuario(current_user, id):
     return jsonify({'mensaje': 'Usuario eliminado exitosamente'}), 200
 
 # ENDPOINTS DE CATEGORÍAS
-
 # CREAR CATEGORÍA
 @app.route('/categoria/<string:nombre>', methods=['POST'])
 @token_required
@@ -266,7 +262,6 @@ def crear_categoria(current_user, nombre):
     if not nombre:
         return jsonify({'error': 'Nombre de categoría requerido.'}), 400
 
-    # VERIFICAR SI LA CATEGORÍA YA EXISTE
     if Categoria.query.filter_by(nombre=nombre).first():
         return jsonify({'error': 'La categoría ya existe.'}), 409
 
@@ -288,7 +283,6 @@ def editar_categoria(current_user, id):
     if categoria is None:
         return jsonify({'error': 'Categoría no encontrada'}), 404
 
-    # VERIFICAR SI EL NOMBRE DE CATEGORÍA YA ESTÁ EN USO
     if Categoria.query.filter(
         Categoria.nombre == nuevo_nombre,
         Categoria.id != id
@@ -332,7 +326,6 @@ def obtener_categoria(id):
     return categoria_schema.jsonify(categoria)
 
 # ENDPOINTS DE PELÍCULAS
-
 # SERVIR IMÁGENES ESTÁTICAS
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
@@ -451,7 +444,6 @@ def crear_pelicula(current_user):
     if Pelicula.query.filter_by(nombre=nombre).first():
         return jsonify({'error': 'El nombre de la película ya está en uso.'}), 409
 
-    # Verificar si la categoría existe
     if categoria_id:
         categoria = Categoria.query.get(categoria_id)
         if not categoria:
@@ -461,7 +453,7 @@ def crear_pelicula(current_user):
 
     filename = secure_filename(file.filename)
     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    rutaImagen = filename  # Guardamos solo el nombre del archivo
+    rutaImagen = filename 
 
     nueva_pelicula = Pelicula(
         nombre=nombre,
@@ -490,19 +482,16 @@ def actualizar_pelicula(current_user, id):
     duracion = request.form.get('duracion', pelicula.duracion)
     categoria_id = request.form.get('categoria_id', pelicula.categoria_id)
 
-    # Verificar si el nombre ya está en uso por otra película
     if Pelicula.query.filter(
         Pelicula.nombre == nombre,
         Pelicula.id != id
     ).first():
         return jsonify({'error': 'El nombre de la película ya está en uso.'}), 409
 
-    # Actualizar los campos
     pelicula.nombre = nombre
     pelicula.descripcion = descripcion
     pelicula.duracion = duracion
 
-    # Verificar si la categoría existe
     if categoria_id:
         categoria = Categoria.query.get(categoria_id)
         if not categoria:
@@ -511,7 +500,6 @@ def actualizar_pelicula(current_user, id):
     else:
         pelicula.categoria_id = None
 
-    # Manejar la imagen si se envió una nueva
     if 'imagen' in request.files:
         file = request.files['imagen']
         if file and allowed_file(file.filename):
